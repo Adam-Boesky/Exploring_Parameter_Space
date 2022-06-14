@@ -34,7 +34,7 @@ listChoices:
   --debug-classes: []
   --log-classes: []
 numericalChoices:
-  --common-envelope-alpha: 6.7
+  --common-envelope-alpha: 0.5
   --common-envelope-alpha-thermal: 1.0
   --common-envelope-lambda: 0.1
   --common-envelope-lambda-multiplier: 1.0
@@ -45,7 +45,7 @@ numericalChoices:
   --common-envelope-slope-kruckow: -0.83333333333
   --cool-wind-mass-loss-multiplier: 1.0
   --debug-level: 0
-  --eccentricity: null
+  --eccentricity: 0.0
   --eccentricity-max: 1.0
   --eccentricity-min: 0.0
   --eddington-accretion-factor: 1
@@ -95,7 +95,7 @@ numericalChoices:
   --maximum-neutron-star-mass: 2.5
   --maximum-number-timestep-iterations: 99999
   --mcbur1: 1.6
-  --metallicity: 0.0142
+  --metallicity: null
   --metallicity-max: 0.03
   --metallicity-min: 0.0001
   --minimum-secondary-mass: 0.1
@@ -139,7 +139,7 @@ stringChoices:
   --eccentricity-distribution: ZERO
   --envelope-state-prescription: LEGACY
   --fryer-supernova-engine: DELAYED
-  --grid: BSE_Grid.txt
+  --grid: null
   --initial-mass-function: KROUPA
   --kick-direction: ISOTROPIC
   --kick-magnitude-distribution: MAXWELLIAN
@@ -153,7 +153,7 @@ stringChoices:
   --logfile-supernovae: null
   --logfile-switch-log: null
   --logfile-system-parameters: null
-  --logfile-type: null
+  --logfile-type: HDF5
   --luminous-blue-variable-prescription: HURLEY_ADD
   --mass-loss-prescription: VINK
   --mass-ratio-distribution: FLAT

@@ -29,12 +29,12 @@ class SwInterface():
         self.COMPAS_ROOT_DIR = os.environ.get('COMPAS_ROOT_DIR')
         self.compas_executable = os.path.join(self.COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable      # Note: overrides runSubmit + compasConfigDefault.yaml value
         self.config_file = config_file        # Stroopwafel configuration file
-        self.num_systems = 10000                  # Number of binary systems to evolve                                             # Note: overrides runSubmit + compasConfigDefault.yaml value
+        self.num_systems = num_systems                  # Number of binary systems to evolve                                             # Note: overrides runSubmit + compasConfigDefault.yaml value
         self.output_folder = 'output_' + param + '/output_' + val + '/'           # Location of output folder (relative to cwd)                                     # Note: overrides runSubmit + compasConfigDefault.yaml value
         self.random_seed_base = 0                # The initial random seed to increment from                                       # Note: overrides runSubmit + compasConfigDefault.yaml value
 
         self.num_cores = num_cores                       # Number of cores to parallelize over 
-        self.num_per_core = 10000                  # Number of binaries per batch
+        self.num_per_core = num_per_core                  # Number of binaries per batch
         self.mc_only = False                      # Exclude adaptive importance sampling (currently not implemented, leave set to True)
         self.run_on_hpc = False                  # Run on slurm based cluster HPC
 
@@ -54,7 +54,7 @@ class SwInterface():
         """
         m1 = classes.Dimension('--initial-mass-1', 5, 50, sampler.kroupa, prior.kroupa)
         q = classes.Dimension('q', 0, 1, sampler.uniform, prior.uniform, should_print = False)
-        a = classes.Dimension('-a', .01, 10, sampler.flat_in_log, prior.flat_in_log) # I think this is off?
+        a = classes.Dimension('--semi-major-axis', .01, 10, sampler.flat_in_log, prior.flat_in_log) # I think this is off?
         # kick_velocity_random_1 = classes.Dimension('Kick_Velocity_Random_1', 0, 1, sampler.uniform, prior.uniform)
         # kick_theta_1 = classes.Dimension('Kick_Theta_1', -np.pi / 2, np.pi / 2, sampler.uniform_in_cosine, prior.uniform_in_cosine)
         #kick_phi_1 = classes.Dimension('Kick_Phi_1', 0, 2 * np.pi, sampler.uniform, prior.uniform)
@@ -304,7 +304,7 @@ def main():
     # ce_alpha_interface.run_sw()
     for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_config_files'):
         val = filename[:-5][-4:].replace('_','')
-        ce_alpha_interface = SwInterface('common_envelope_alpha_config_files/' + filename, 'common_envelope_alpha', val, num_systems=1000000, num_per_core=1000000)
+        ce_alpha_interface = SwInterface('common_envelope_alpha_config_files/' + filename, 'common_envelope_alpha', val, num_systems=1000000, num_per_core=100000, num_cores=10)
         ce_alpha_interface.run_sw()
 
 if __name__ == '__main__':
