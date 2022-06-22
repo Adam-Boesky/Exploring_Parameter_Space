@@ -22,16 +22,21 @@ import h5py
 
 class SwInterface():
     
-    def __init__(self, config_file, param, val, num_systems = 1000, num_per_core = 1000, num_cores = 1, random_seed_base = 0):
+    def __init__(self, config_file, param, val, param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, random_seed_base = 0):
 
         ### Set default stroopwafel inputs - these are overwritten by any command-line arguments
 
         self.COMPAS_ROOT_DIR = os.environ.get('COMPAS_ROOT_DIR')
-        self.compas_executable = os.path.join(self.COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable      # Note: overrides runSubmit + compasConfigDefault.yaml value
+        self.compas_executable = os.path.join(self.COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable                      # Note: overrides runSubmit + compasConfigDefault.yaml value
         self.config_file = config_file        # Stroopwafel configuration file
-        self.num_systems = num_systems                  # Number of binary systems to evolve                                             # Note: overrides runSubmit + compasConfigDefault.yaml value
-        self.output_folder = 'output_' + param + '/output_' + val + '/'           # Location of output folder (relative to cwd)                                     # Note: overrides runSubmit + compasConfigDefault.yaml value
-        self.random_seed_base = 0                # The initial random seed to increment from                                       # Note: overrides runSubmit + compasConfigDefault.yaml value
+        self.num_systems = num_systems                  # Number of binary systems to evolve                                          # Note: overrides runSubmit + compasConfigDefault.yaml value
+        
+        # Location of output folder (relative to cwd)
+        if not param2:
+            self.output_folder = 'output_' + param + '_' + val + '/'                                                                  # Note: overrides runSubmit + compasConfigDefault.yaml value
+        else:
+            self.output_folder = 'output_' + param + '_' + val + '_' + param2 + '_' + val2 + '/'
+        self.random_seed_base = 0                # The initial random seed to increment from                                          # Note: overrides runSubmit + compasConfigDefault.yaml value
 
         self.num_cores = num_cores                       # Number of cores to parallelize over 
         self.num_per_core = num_per_core                  # Number of binaries per batch
@@ -55,6 +60,7 @@ class SwInterface():
         m1 = classes.Dimension('--initial-mass-1', 5, 50, sampler.kroupa, prior.kroupa)
         q = classes.Dimension('q', 0, 1, sampler.uniform, prior.uniform, should_print = False)
         a = classes.Dimension('--semi-major-axis', .01, 10, sampler.flat_in_log, prior.flat_in_log) # I think this is off?
+        Z = classes.Dimension('--metallicity', 0.0001, 0.03, sampler.flat_in_log, prior.flat_in_log)
         # kick_velocity_random_1 = classes.Dimension('Kick_Velocity_Random_1', 0, 1, sampler.uniform, prior.uniform)
         # kick_theta_1 = classes.Dimension('Kick_Theta_1', -np.pi / 2, np.pi / 2, sampler.uniform_in_cosine, prior.uniform_in_cosine)
         #kick_phi_1 = classes.Dimension('Kick_Phi_1', 0, 2 * np.pi, sampler.uniform, prior.uniform)
@@ -62,7 +68,7 @@ class SwInterface():
         #kick_theta_2 = classes.Dimension('Kick_Theta_2', -np.pi / 2, np.pi / 2, sampler.uniform_in_cosine, prior.uniform_in_cosine)
         #kick_phi_2 = classes.Dimension('Kick_Phi_2', 0, 2 * np.pi, sampler.uniform, prior.uniform)
         #return [m1, q, a, kick_velocity_random_1, kick_theta_1, kick_phi_1, kick_velocity_random_2, kick_theta_2, kick_phi_2]
-        return [m1, q, a]
+        return [m1, q, a, Z]
 
     def update_properties(self, locations, dimensions):
         """
@@ -78,7 +84,7 @@ class SwInterface():
         q = dimensions[1]
         for location in locations:
             location.properties['--initial-mass-2'] = location.dimensions[m1] * location.dimensions[q]
-            location.properties['--metallicity'] = location.properties['--metallicity'] = constants.METALLICITY_SOL
+            # location.properties['--metallicity'] = location.properties['--metallicity'] = constants.METALLICITY_SOL
             location.properties['--eccentricity'] = 0
             #location.properties['Kick_Mean_Anomaly_1'] = np.random.uniform(0, 2 * np.pi, 1)[0]
             #location.properties['Kick_Mean_Anomaly_2'] = np.random.uniform(0, 2 * np.pi, 1)[0]
@@ -122,6 +128,7 @@ class SwInterface():
         batch['output_container'] = output_container
         return compas_args
 
+
     def interesting_systems(self, batch):
         """
         This is a mandatory function, it tells stroopwafel what an interesting system is. User is free to define whatever looks interesting to them.
@@ -163,6 +170,7 @@ class SwInterface():
         except IOError as error:
             return 0
 
+
     def selection_effects(self, sw):
         """
         This is not a mandatory function, it was written to support selection effects
@@ -189,6 +197,7 @@ class SwInterface():
             for index, distribution in enumerate(sw.adapted_distributions):
                 distribution.biased_weight = np.power(max(rows[index]), 2.2) / mean
 
+
     def rejected_systems(self, locations, dimensions):
         """
         This method takes a list of locations and marks the systems which can be
@@ -201,9 +210,10 @@ class SwInterface():
         m1 = dimensions[0]
         q = dimensions[1]
         a = dimensions[2]
+        Z = dimensions[3]
         mass_1 = [location.dimensions[m1] for location in locations]
         mass_2 = [location.properties['--initial-mass-2'] for location in locations]
-        metallicity = [location.properties['--metallicity'] for location in locations]
+        metallicity = [location.dimensions[Z] for location in locations]
         eccentricity = [location.properties['--eccentricity'] for location in locations]
         num_rejected = 0
         for index, location in enumerate(locations):
@@ -217,6 +227,7 @@ class SwInterface():
                 location.properties['is_rejected'] = 1
                 num_rejected += 1
         return num_rejected
+
 
     def run_sw(self):
         # STEP 1 : Import and assign input parameters for stroopwafel 
@@ -299,13 +310,34 @@ class SwInterface():
         end_time = time.time()
         print ("Total running time = %d seconds" %(end_time - start_time))
 
+
 def main():
-    # ce_alpha_interface = SwInterface('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_config_files/config_common_envelope_alpha_0.1.yaml', 'common_envelope_alpha_0.1')
-    # ce_alpha_interface.run_sw()
-    for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_config_files'):
-        val = filename[:-5][-4:].replace('_','')
-        ce_alpha_interface = SwInterface('common_envelope_alpha_config_files/' + filename, 'common_envelope_alpha', val, num_systems=1000000, num_per_core=100000, num_cores=10)
+
+    # # ALPHA_CE
+    # for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_config_files'):
+    #     val = filename[:-5][-4:].replace('_','')
+    #     ce_alpha_interface = SwInterface('common_envelope_alpha_config_files/' + filename, 'common_envelope_alpha', val, num_systems=1000000, num_per_core=100000, num_cores=10)
+    #     ce_alpha_interface.run_sw()
+
+
+
+
+    # ALPHA_CE AND BETA
+    for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_mass_transfer_fa_config_files'):
+        
+        # Get the valeus from each filename
+        vals = []
+        for piece in filename[:-5].split('_'):
+            try:
+                float(piece)
+                vals.append(piece)
+            except ValueError:
+                pass
+        
+        # Run the stroopwafel sampling
+        ce_alpha_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0], param2='beta', val2=vals[1], num_systems=1000000, num_per_core=100000, num_cores=10)
         ce_alpha_interface.run_sw()
+
 
 if __name__ == '__main__':
     sys.exit(main())
