@@ -110,27 +110,27 @@ def identify_formation_channels(seeds, file):
 
     moments = find_mass_transfer_moments(rlof_seeds)
 
-    rlof_ratio_1, rlof_ratio_2, cee_flag,\
+    rlof_primary, rlof_secondary, cee_flag,\
         stellar_type_1, stellar_type_2 = get_COMPAS_vars(file,
                                                          "BSE_RLOF",
-                                                         ["Radius(1)|RL<step",
-                                                          "Radius(2)|RL<step",
+                                                         ["RLOF(1)>MT",
+                                                          "RLOF(2)>MT",
                                                           "CEE>MT",
                                                           "Stellar_Type(1)<MT",
                                                           "Stellar_Type(2)<MT"],
                                                          rlof_mask)
-    
+
     # CLASSIC channel
     # 1st transfer, stable RLOF from primary (post-MS, unstripped) onto MS
     classic_or_OS_MT1 = np.logical_and.reduce((moments == 1,
-                                               rlof_ratio_1 >= 1,
+                                               rlof_primary,
                                                np.logical_not(cee_flag),
                                                stellar_type_1 > 1,
                                                stellar_type_1 < 7,
                                                stellar_type_2 <= 1))
     # 2nd transfer, unstripped secondary RLOF into CE
     classic_MT2 = np.logical_and.reduce((moments == 2,
-                                         rlof_ratio_2 >= 1,
+                                         rlof_secondary,
                                          cee_flag,
                                          stellar_type_2 < 7))
     classic_seeds = np.intersect1d(rlof_seeds[classic_or_OS_MT1],
@@ -140,7 +140,7 @@ def identify_formation_channels(seeds, file):
     # ONLY STABLE channel
     # 1st transfer as classic, 2nd transfer unstripped secondary stable RLOF
     only_stable_MT2 = np.logical_and.reduce((moments == 2,
-                                             rlof_ratio_2 >= 1,
+                                             rlof_secondary,
                                              np.logical_not(cee_flag),
                                              stellar_type_2 < 7))
     only_stable_seeds = np.intersect1d(rlof_seeds[classic_or_OS_MT1],
@@ -150,7 +150,7 @@ def identify_formation_channels(seeds, file):
     # SINGLE CORE CEE channel
     # 1st transfer unstable, primary giant branch onto MS secondary
     single_core = np.logical_and.reduce((moments == 1,
-                                         rlof_ratio_1 >= 1,
+                                         rlof_primary,
                                          cee_flag,
                                          stellar_type_1 > 2,
                                          stellar_type_1 < 7,
@@ -160,7 +160,7 @@ def identify_formation_channels(seeds, file):
     # DOUBLE CORE CEE channel
     # 1st transfer unstable, primary giant branch onto giant branch secondary
     double_core = np.logical_and.reduce((moments == 1,
-                                         rlof_ratio_1 >= 1,
+                                         rlof_primary,
                                          cee_flag,
                                          stellar_type_1 > 2,
                                          stellar_type_1 < 7,
