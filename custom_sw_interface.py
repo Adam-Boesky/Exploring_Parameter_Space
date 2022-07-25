@@ -22,20 +22,20 @@ import h5py
 
 class SwInterface():
     
-    def __init__(self, config_file, param, val, param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, random_seed_base = 0):
+    def __init__(self, config_file, param, val, output_dir_name = 'output', param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, random_seed_base = 0):
 
         ### Set default stroopwafel inputs - these are overwritten by any command-line arguments
 
         self.COMPAS_ROOT_DIR = os.environ.get('COMPAS_ROOT_DIR')
-        self.compas_executable = os.path.join(self.COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable                      # Note: overrides runSubmit + compasConfigDefault.yaml value
-        self.config_file = config_file        # Stroopwafel configuration file
-        self.num_systems = num_systems                  # Number of binary systems to evolve                                          # Note: overrides runSubmit + compasConfigDefault.yaml value
+        self.compas_executable = os.path.join(self.COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable                        # Note: overrides runSubmit + compasConfigDefault.yaml value
+        self.config_file = os.path.join('/Users/adamboesky/Research/PRISE/exploring_parameter_space/Configuration_Files', config_file)  # Stroopwafel configuration file
+        self.num_systems = num_systems                  # Number of binary systems to evolve                                            # Note: overrides runSubmit + compasConfigDefault.yaml value
         
         # Location of output folder (relative to cwd)
         if not param2:
-            self.output_folder = 'output_' + param + '_' + val + '/'                                                                  # Note: overrides runSubmit + compasConfigDefault.yaml value
+            self.output_folder = 'Data/' + output_dir_name + '/' + 'output_' + param + '_' + val + '/'                                                                  # Note: overrides runSubmit + compasConfigDefault.yaml value
         else:
-            self.output_folder = 'output_' + param + '_' + val + '_' + param2 + '_' + val2 + '/'
+            self.output_folder = 'Data/' + output_dir_name + '/' + 'output_' + param + '_' + val + '_' + param2 + '_' + val2 + '/'
         self.random_seed_base = 0                # The initial random seed to increment from                                          # Note: overrides runSubmit + compasConfigDefault.yaml value
 
         self.num_cores = num_cores                       # Number of cores to parallelize over 
@@ -57,9 +57,9 @@ class SwInterface():
         OUT:
             As Output, this should return a list containing all the instances of Dimension class.
         """
-        m1 = classes.Dimension('--initial-mass-1', 5, 50, sampler.kroupa, prior.kroupa)
+        m1 = classes.Dimension('--initial-mass-1', 5, 150, sampler.kroupa, prior.kroupa)
         q = classes.Dimension('q', 0, 1, sampler.uniform, prior.uniform, should_print = False)
-        a = classes.Dimension('--semi-major-axis', .01, 10, sampler.flat_in_log, prior.flat_in_log) # I think this is off?
+        a = classes.Dimension('--semi-major-axis', .01, 1000, sampler.flat_in_log, prior.flat_in_log) # I think this is off? IT WAS!!!
         Z = classes.Dimension('--metallicity', 0.0001, 0.03, sampler.flat_in_log, prior.flat_in_log)
         # kick_velocity_random_1 = classes.Dimension('Kick_Velocity_Random_1', 0, 1, sampler.uniform, prior.uniform)
         # kick_theta_1 = classes.Dimension('Kick_Theta_1', -np.pi / 2, np.pi / 2, sampler.uniform_in_cosine, prior.uniform_in_cosine)
@@ -277,7 +277,7 @@ class SwInterface():
             self.commandOptions.update(pySubOptions)
 
         except:
-            print("Invalid runSubmit + compas ConfigDefault.yaml file, using default stroopwafel options")        
+            raise ValueError("Invalid runSubmit + compas ConfigDefault.yaml file, using default stroopwafel options")        
 
         print("Output folder is: ", self.output_folder)
         if os.path.exists(self.output_folder):
@@ -323,7 +323,7 @@ def main():
 
 
     # ALPHA_CE AND BETA
-    for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_mass_transfer_fa_config_files'):
+    for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/Configuration_Files/common_envelope_alpha_mass_transfer_fa_config_files'):
         
         # Get the valeus from each filename
         vals = []
@@ -335,7 +335,7 @@ def main():
                 pass
         
         # Run the stroopwafel sampling
-        ce_alpha_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0], param2='beta', val2=vals[1], num_systems=1000000, num_per_core=100000, num_cores=10)
+        ce_alpha_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0], output_dir_name='2output_alpha_CE_beta_corrected_dists', param2='beta', val2=vals[1], num_systems=1000000, num_per_core=100000, num_cores=10)
         ce_alpha_interface.run_sw()
 
 

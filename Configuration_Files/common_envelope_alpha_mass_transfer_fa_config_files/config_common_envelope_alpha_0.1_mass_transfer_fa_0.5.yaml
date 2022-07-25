@@ -161,13 +161,13 @@ stringChoices:
   --mass-transfer-angular-momentum-loss-prescription: ISOTROPIC
   --mass-transfer-rejuvenation-prescription: STARTRACK
   --mass-transfer-thermal-limit-accretor: CFACTOR
-  --metallicity-distribution: ZSOLAR
+  --metallicity-distribution: LOGUNIFORM
   --mode: BSE
   --neutrino-mass-loss-BH-formation: FIXED_MASS
   --neutron-star-equation-of-state: SSE
   --notes: null
   --notes-hdrs: null
-  --orbital-period-distribution: FLATINLOG
+  --orbital-period-distribution: LOGUNIFORM
   --output-container: null
   --output-path: null
   --pulsar-birth-magnetic-field-distribution: ZERO

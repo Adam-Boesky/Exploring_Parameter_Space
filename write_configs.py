@@ -55,11 +55,11 @@ class ConfigWriter:
         self.choice_type2 = choice_type2
 
         # Get the default config file from the compas directory
-        with open(COMPAS_ROOT_DIR + "/utils/preProcessing/" + default_config_filename, "r") as default_yaml:
+        with open('Configuration_Files/Defaults/' + default_config_filename, "r") as default_yaml:
             self.config = yaml.load(default_yaml, Loader=yaml.FullLoader)
 
 
-    def write_configs(self, vals, vals2=False, path='/Users/adamboesky/Research/PRISE/exploring_parameter_space'):
+    def write_configs(self, vals, vals2=False, path='/Users/adamboesky/Research/PRISE/exploring_parameter_space/Configuration_Files'):
         
         # Create folder to dump yaml files into
         if not vals2:
@@ -124,7 +124,7 @@ def main():
     # DOUBLE PARAMETER VARIATIONS
 
     # Vary alpha_CE and beta at the same time
-    alpha_configs = ConfigWriter('--common-envelope-alpha', param2='--mass-transfer-fa', default_config_filename='config_beta_fixed.yaml')
+    alpha_configs = ConfigWriter('--common-envelope-alpha', param2='--mass-transfer-fa', default_config_filename='config_beta_continuous.yaml')
     alpha_configs.write_configs([0.1, 0.5, 2.0, 10.0], [0.25, 0.5, 0.75])
 
 

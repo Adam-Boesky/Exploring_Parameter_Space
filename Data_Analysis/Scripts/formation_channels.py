@@ -35,36 +35,6 @@ def get_COMPAS_vars(compas_file, group, variables, mask=None):
 
     return var_list
 
-def find_mass_transfer_moments(seeds):
-    """Create an array with each moment of mass transfer labelled. This is done
-    such that the first moment is labelled '1' at its index and second as '2'
-    etc.
-
-    Parameters
-    ----------
-    seeds : `int/array`
-        List of seeds that correspond to a binary and each instance
-        corresponds to a moment of mass transfer.
-
-    Returns
-    -------
-    moments : `int/array`
-        List same shape as ``seeds`` with each index labelled with which moment
-        of mass transfer that the binary is going through.
-    """
-    # start a counter that defaults to 0
-    counter = collections.defaultdict(int)
-    moments = np.zeros_like(seeds).astype(int)
-
-    # loop over every seed
-    for i in range(len(seeds)):
-        # increment seed's count
-        counter[seeds[i]] += 1
-
-        # label index with mass transfer moment (1 is first)
-        moments[i] = counter[seeds[i]]
-    return moments
-
 
 def identify_formation_channels(seeds, file):
     """Identify the formation channel that produced each seed. We consider 5
@@ -108,12 +78,11 @@ def identify_formation_channels(seeds, file):
     rlof_mask = np.isin(all_rlof_seeds, seeds)
     rlof_seeds = all_rlof_seeds[rlof_mask]
 
-    moments = find_mass_transfer_moments(rlof_seeds)
-
-    rlof_primary, rlof_secondary, cee_flag,\
+    count, rlof_primary, rlof_secondary, cee_flag,\
         stellar_type_1, stellar_type_2 = get_COMPAS_vars(file,
                                                          "BSE_RLOF",
-                                                         ["RLOF(1)>MT",
+                                                         ["MT_Event_Counter",
+                                                          "RLOF(1)>MT",
                                                           "RLOF(2)>MT",
                                                           "CEE>MT",
                                                           "Stellar_Type(1)<MT",
@@ -122,14 +91,14 @@ def identify_formation_channels(seeds, file):
 
     # CLASSIC channel
     # 1st transfer, stable RLOF from primary (post-MS, unstripped) onto MS
-    classic_or_OS_MT1 = np.logical_and.reduce((moments == 1,
+    classic_or_OS_MT1 = np.logical_and.reduce((count == 1,
                                                rlof_primary,
                                                np.logical_not(cee_flag),
                                                stellar_type_1 > 1,
                                                stellar_type_1 < 7,
                                                stellar_type_2 <= 1))
     # 2nd transfer, unstripped secondary RLOF into CE
-    classic_MT2 = np.logical_and.reduce((moments == 2,
+    classic_MT2 = np.logical_and.reduce((count == 2,
                                          rlof_secondary,
                                          cee_flag,
                                          stellar_type_2 < 7))
@@ -139,7 +108,7 @@ def identify_formation_channels(seeds, file):
 
     # ONLY STABLE channel
     # 1st transfer as classic, 2nd transfer unstripped secondary stable RLOF
-    only_stable_MT2 = np.logical_and.reduce((moments == 2,
+    only_stable_MT2 = np.logical_and.reduce((count == 2,
                                              rlof_secondary,
                                              np.logical_not(cee_flag),
                                              stellar_type_2 < 7))
@@ -149,7 +118,7 @@ def identify_formation_channels(seeds, file):
 
     # SINGLE CORE CEE channel
     # 1st transfer unstable, primary giant branch onto MS secondary
-    single_core = np.logical_and.reduce((moments == 1,
+    single_core = np.logical_and.reduce((count == 1,
                                          rlof_primary,
                                          cee_flag,
                                          stellar_type_1 > 2,
@@ -159,7 +128,7 @@ def identify_formation_channels(seeds, file):
 
     # DOUBLE CORE CEE channel
     # 1st transfer unstable, primary giant branch onto giant branch secondary
-    double_core = np.logical_and.reduce((moments == 1,
+    double_core = np.logical_and.reduce((count == 1,
                                          rlof_primary,
                                          cee_flag,
                                          stellar_type_1 > 2,
