@@ -123,6 +123,7 @@ def pickle_rates_and_boostraps(path, output_path, dco_type=None, merger_output_f
     rates_and_bootstraps = {}
 
     # sum things up across binaries
+    rates_and_bootstraps['redshifts'] = redshifts
     rates_and_bootstraps['total_formation_rates'] = np.sum(formation_rates, axis=0)
     rates_and_bootstraps['total_merger_rates'] = np.sum(merger_rates, axis=0)
     total_detection_rates = np.sum(detection_rates, axis=0)
