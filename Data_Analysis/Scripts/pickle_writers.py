@@ -4,7 +4,9 @@ import os
 # Append paths to sys
 compasRootDir   = '/Users/adamboesky/Research/PRISE/COMPAS'
 sys.path.append(compasRootDir + '/utils/CosmicIntegration/')
-sys.path.append(os.getcwd() + '/Scripts')
+clusterCompasRootDir   = '/n/home04/aboesky/berger/COMPAS'
+sys.path.append(clusterCompasRootDir + '/utils/CosmicIntegration/')
+
 
 import pickle
 import numpy as np
