@@ -39,6 +39,7 @@ def get_bootstraps(COMPAS, n_iters, calculation_kwargs, Mc_bins, num_free_cpus=2
 
         # Iterate through different bootstrap iterations
         for _ in range(n_iters):
+            
 
             # Make a mask that randomly draws from the data for the DCOs that you have
             mask = np.random.randint(low=0, high=num_binaries, size=num_binaries)

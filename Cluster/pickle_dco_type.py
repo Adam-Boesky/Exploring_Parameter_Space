@@ -9,7 +9,7 @@ compasRootDir = '/n/home04/aboesky/berger/COMPAS'
 sys.path.append(compasRootDir + '/utils/CosmicIntegration/')
 
 # Scripts I will need to write a pickle
-sys.path.append(os.getcwd() + '/Scripts')
+sys.path.append('/n/home04/aboesky/berger/Exploring_Parameter_Space/Data_Analysis/Scripts')
 
 from pickle_writers import pickle_rates_and_boostraps
 
