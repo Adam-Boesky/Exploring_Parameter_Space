@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -c 96               # Number of cores (-c)
+#SBATCH -c 48               # Number of cores (-c)
 #SBATCH -t 0-05:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p shared           # Partition to submit to
 #SBATCH --mem=184G          # Memory pool for all cores (see also --mem-per-cpu)
