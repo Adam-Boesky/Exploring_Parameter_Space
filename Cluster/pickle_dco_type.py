@@ -40,7 +40,7 @@ def pickle_results(condensed_paths, alpha_vals, beta_vals, dco_type, weight_colu
 
             # Put that data into it
             pickle_rates_and_boostraps(condensed_paths[alpha_val][beta_val], dco_type_folder + '/alpha_CE_' + alpha_val + '_beta_' + beta_val + '.pkl', 
-            dco_type='BNS', merger_output_filename=None, weight_column=weight_column,
+            dco_type=dco_type, merger_output_filename=None, weight_column=weight_column,
             merges_hubble_time=merges_hubble_time, pessimistic_CEE=pessimistic_CEE,
             no_RLOF_after_CEE=no_RLOF_after_CEE, max_redshift=max_redshift,
             max_redshift_detection=max_redshift_detection,
