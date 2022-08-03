@@ -133,23 +133,22 @@ def main():
 
 
     # Write to Pickle!!!!
-    for dco_type in ['BBH', 'BHNS', 'BNS']:
-        pickle_results(condensed_paths, alpha_vals, beta_vals, dco_type=dco_type, weight_column=weight_column,
-                    merges_hubble_time=merges_hubble_time, pessimistic_CEE=pessimistic_CEE,
-                    no_RLOF_after_CEE=no_RLOF_after_CEE, max_redshift=max_redshift,
-                    max_redshift_detection=max_redshift_detection,
-                    redshift_step=redshift_step, z_first_SF=z_first_SF,
-                    m1_min=m1_min, m1_max=m1_max, m2_min=m2_min,
-                    fbin=fbin, aSF=aSF, bSF=bSF, cSF=cSF, dSF=dSF,
-                    mu0=mu0, muz=muz, sigma0=sigma0, alpha=alpha,
-                    min_logZ=min_logZ, max_logZ=max_logZ, step_logZ=step_logZ,
-                    sensitivity=sensitivity, snr_threshold=snr_threshold,
-                    Mc_max=Mc_max, Mc_step=Mc_step,
-                    eta_max=eta_max, eta_step=eta_step,
-                    snr_max=snr_max, snr_step=snr_step, 
-                    lognormal=lognormal, Zprescription=Zprescription, SFRprescription=SFRprescription,      # ADAM'S NON-LOGNORMAL MSSFR PRESCRIPTIONS
-                    GSMFprescription=GSMFprescription, ZMprescription=ZMprescription,                       # ADAM'S NON-LOGNORMAL MSSFR PRESCRIPTIONS
-                    logNormalPrescription=logNormalPrescription, n_iters=100, num_free_cpus=2)
+    pickle_results(condensed_paths, alpha_vals, beta_vals, dco_type='BBH', weight_column=weight_column,
+                merges_hubble_time=merges_hubble_time, pessimistic_CEE=pessimistic_CEE,
+                no_RLOF_after_CEE=no_RLOF_after_CEE, max_redshift=max_redshift,
+                max_redshift_detection=max_redshift_detection,
+                redshift_step=redshift_step, z_first_SF=z_first_SF,
+                m1_min=m1_min, m1_max=m1_max, m2_min=m2_min,
+                fbin=fbin, aSF=aSF, bSF=bSF, cSF=cSF, dSF=dSF,
+                mu0=mu0, muz=muz, sigma0=sigma0, alpha=alpha,
+                min_logZ=min_logZ, max_logZ=max_logZ, step_logZ=step_logZ,
+                sensitivity=sensitivity, snr_threshold=snr_threshold,
+                Mc_max=Mc_max, Mc_step=Mc_step,
+                eta_max=eta_max, eta_step=eta_step,
+                snr_max=snr_max, snr_step=snr_step, 
+                lognormal=lognormal, Zprescription=Zprescription, SFRprescription=SFRprescription,      # ADAM'S NON-LOGNORMAL MSSFR PRESCRIPTIONS
+                GSMFprescription=GSMFprescription, ZMprescription=ZMprescription,                       # ADAM'S NON-LOGNORMAL MSSFR PRESCRIPTIONS
+                logNormalPrescription=logNormalPrescription, n_iters=100, num_free_cpus=2)
 
 if __name__ == '__main__':
     main()
