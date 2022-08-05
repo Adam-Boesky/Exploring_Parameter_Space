@@ -32,7 +32,7 @@ cluster_config_dir = '/n/home04/aboesky/berger/Exploring_Parameter_Space/Configu
 
 # String to use for slurm job submissions
 SlurmJobString="""#!/bin/bash
-#SBATCH --job-name=%s 				#job name
+#SBATCH --job-name=%s 				# job name
 #SBATCH --nodes=%s 					# Number of nodes
 #SBATCH --ntasks=%s 				# Number of cores
 #SBATCH --output=%s 				# output storage file
@@ -68,7 +68,7 @@ export PARAM2_VAL=%s
 
 class SwInterface():
     
-    def __init__(self, config_file, param, val, output_dir_name = 'output', param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, random_seed_base = 0, local=True):
+    def __init__(self, config_file, param, val, output_dir_name = 'output', param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, num_nodes=1, random_seed_base = 0, local=True):
 
         ### Set default stroopwafel inputs - these are overwritten by any command-line arguments
 
@@ -107,18 +107,19 @@ class SwInterface():
         self.param2_val = val2                  # Value of the second parameter
 
         self.local = local                      # Whether this is local a local job or a slurm submittion
+        self.num_nodes = num_nodes              # The number of nodes that we will be using
 
         self.commandOptions =  null
     
 
-    def make_slurm_batch(self, OUT_DIR = None, sub_dir = 'MainRun/', python_name = "custom_sw_run", job_name = "sw_run",\
-        number_of_nodes = 1, number_of_cores = 1, partition='shared', flags=" ",\
+    def make_slurm_batch(self, OUT_DIR = None, python_name = "custom_sw_run", job_name = "sw_run",\
+        number_of_nodes = 1, number_of_cores = 1, partition='shared',\
         walltime = '05:00:00', memory = '16000'):
         # Code adapted from Lieke Van Son
 
         # Output and error files
-        outfile = OUT_DIR +'/masterfolder/'+sub_dir + job_name+ '.out'
-        errfile = OUT_DIR +'/masterfolder/'+sub_dir + job_name+ '.err'
+        outfile = OUT_DIR + job_name + '.out'
+        errfile = OUT_DIR + job_name + '.err'
 
         # The line that runs the job
         job_line = "python "+python_name+".py"
@@ -428,8 +429,20 @@ class SwInterface():
 
             end_time = time.time()
             print ("Total running time = %d seconds" %(end_time - start_time))
+
         else: # This is a cluster job
-            fill in...
+            # Make Stroopwafel batch and submit it
+            print(10* "*" + ' You are Going to Run stroopwafel_interface.py')
+            # Make and safe a slurm command  #"stroopwafel_interface",\
+            SW_job_string = self.make_slurm_batch(OUT_DIR = self.output_folder, python_name = "custom_sw_run",\
+                job_name = "sw_run", number_of_nodes = self.num_nodes, number_of_cores = self.num_cores, partition='shared',\
+                walltime = "40:00:00", memory = "15000", email = user_email) #150000
+
+            # Submit the job to sbatch! 
+            SWjob_id = self.run_slurm_batch(run_dir = cluster_scripts_path, job_name = "sw_run",\
+                dependency = False, dependent_ID = None)
+
+
 
 
 
