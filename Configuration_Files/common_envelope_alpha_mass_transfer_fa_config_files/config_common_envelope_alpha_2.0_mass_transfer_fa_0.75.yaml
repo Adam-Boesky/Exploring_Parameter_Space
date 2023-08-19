@@ -1,5 +1,5 @@
 booleanChoices:
-  --allow-H-rich-ECSN: true
+  --allow-non-stripped-ECSN: true
   --allow-rlof-at-birth: true
   --allow-touching-at-birth: false
   --angular-momentum-conservation-during-circularisation: false

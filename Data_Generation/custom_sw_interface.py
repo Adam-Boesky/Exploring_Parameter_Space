@@ -24,10 +24,11 @@ import h5py
 
 # SLURM USERS, CHANGE THESE!
 user_email = 'aboesky@college.harvard.edu'
-cluster_scripts_path = '/n/home04/aboesky/berger/Exploring_Parameter_Space/Cluster/'
+cluster_path_to_scripts = '/n/home04/aboesky/berger/Exploring_Parameter_Space/Cluster/'
 cluster_storage_path = '/n/holystore01/LABS/berger_lab/Users/aboesky/two_parameters/'
 cluster_compas_root_dir = '/n/home04/aboesky/berger/COMPAS'
 cluster_config_dir = '/n/home04/aboesky/berger/Exploring_Parameter_Space/Configuration_Files/'
+cluster_COMPAS_ROOT_DIR = '/n/home04/aboesky/pgk/COMPAS'
 
 
 # String to use for slurm job submissions
@@ -37,11 +38,15 @@ SlurmJobString="""#!/bin/bash
 #SBATCH --ntasks=%s 				# Number of cores
 #SBATCH --output=%s 				# output storage file
 #SBATCH --error=%s 					# error storage file
-#SBATCH --time=%s 					# Runtime in minutes
+#SBATCH --time=%s 					# Runtime (hr:min:second)
 #SBATCH --mem=%s 					# Memory per cpu in MB (see also --mem-per-cpu)
 #SBATCH -p %s
 #SBATCH --mail-user=%s 				# Send email to user
 #SBATCH --mail-type=FAIL			#
+#
+#Load Conda environment
+module load gcc/12.1.0-fasrc01 gsl/2.6-fasrc01 hdf5/1.10.6-fasrc01
+source activate Exploring_Uncertainties
 #
 #Print some stuff on screen
 echo $SLURM_JOB_ID
@@ -50,6 +55,8 @@ echo $SLURM_ARRAY_TASK_ID
 #
 #Set variables
 export QT_QPA_PLATFORM=offscreen # To avoid the X Display error
+export CPP_INCLUDE_PATH=/n/home04/aboesky/pgk/boost/include
+export LD_LIBRARY_PATH=/n/home04/aboesky/pgk/boost/lib:$LD_LIBRARY_PATH
 export COMPAS_ROOT_DIR=%s
 export CONFIG_FILEPATH=%s
 export OUTPUT_DIRNAME=%s
@@ -62,18 +69,88 @@ export PARAM1_VAL=%s
 export PARAM2_VAL=%s
 #
 # Run your job
-%
+%s
+"""
+
+DataSlurmJobString="""#!/bin/bash
+#SBATCH --job-name=%s 				# job name
+#SBATCH --nodes=%s 					# Number of nodes
+#SBATCH --ntasks=%s 				# Number of cores
+#SBATCH --output=%s 				# output storage file
+#SBATCH --error=%s 					# error storage file
+#SBATCH --time=%s 					# Runtime (hr:min:second)
+#SBATCH --mem=%s 					# Memory per cpu in MB (see also --mem-per-cpu)
+#SBATCH -p %s
+#SBATCH --mail-user=%s 				# Send email to user
+#SBATCH --mail-type=FAIL			#
+#
+#Load Conda environment
+module load Anaconda/5.0.1-fasrc02
+source activate Exploring_Uncertainties
+#
+#Print some stuff on screen
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NAME
+echo $SLURM_ARRAY_TASK_ID
+#
+#Set variables
+export QT_QPA_PLATFORM=offscreen # To avoid the X Display error
+export COMPAS_ROOT_DIR=%s
+export OUTPUT_DIRNAME=%s
+export PARAM1_LABEL=%s
+export PARAM2_LABEL=%s
+export PARAM1_VAL=%s
+export PARAM2_VAL=%s
+#
+# Run your job
+%s
+"""
+
+RatesSlurmJobString="""#!/bin/bash
+#SBATCH --job-name=%s 				# job name
+#SBATCH --nodes=%s 					# Number of nodes
+#SBATCH --ntasks=%s 				# Number of cores
+#SBATCH --output=%s 				# output storage file
+#SBATCH --error=%s 					# error storage file
+#SBATCH --time=%s 					# Runtime (hr:min:second)
+#SBATCH --mem=%s 					# Memory per cpu in MB (see also --mem-per-cpu)
+#SBATCH -p %s
+#SBATCH --mail-user=%s 				# Send email to user
+#SBATCH --mail-type=FAIL			#
+#
+#Load Conda environment
+module load Anaconda/5.0.1-fasrc02
+source activate Exploring_Uncertainties
+#
+#Print some stuff on screen
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NAME
+echo $SLURM_ARRAY_TASK_ID
+#
+#Set variables
+export QT_QPA_PLATFORM=offscreen # To avoid the X Display error
+export COMPAS_ROOT_DIR=%s
+export OUTPUT_DIRNAME=%s
+export PARAM1_LABEL=%s
+export PARAM2_LABEL=%s
+export PARAM1_VAL=%s
+export PARAM2_VAL=%s
+export DCO_TYPE=%s
+#
+# Run your job
+%s
 """
 
 
 class SwInterface():
     
-    def __init__(self, config_file, param, val, output_dir_name = 'output', param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, num_nodes=1, random_seed_base = 0, local=True):
+    def __init__(self, config_file, param, val, output_dir_name = 'output', param2 = False, val2 = False, num_systems = 1000, num_per_core = 1000, num_cores = 1, \
+        num_nodes=1, memory='32G', random_seed_base = 0, local=True, partition='test', walltime = '00:10:00', cluster_scripts_path='/n/home04/aboesky/berger/Exploring_Parameter_Space/Cluster/', \
+        on_cluster=False, sw_simulations=False):
 
         ### Set default stroopwafel inputs - these are overwritten by any command-line arguments
 
-        self.COMPAS_ROOT_DIR = os.environ.get('COMPAS_ROOT_DIR')
-        self.compas_executable = os.path.join(self.COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable                            # Note: overrides runSubmit + compasConfigDefault.yaml value
+        self.compas_executable = os.path.join(cluster_COMPAS_ROOT_DIR, 'src/COMPAS')   # Location of the executable                            # Note: overrides runSubmit + compasConfigDefault.yaml value
         self.num_systems = num_systems                                              # Number of binary systems to evolve                    # Note: overrides runSubmit + compasConfigDefault.yaml value
         if local:
             self.config_file = os.path.join('/Users/adamboesky/Research/PRISE/exploring_parameter_space/Configuration_Files', config_file)  # Stroopwafel configuration file
@@ -83,70 +160,89 @@ class SwInterface():
         # Location of output folder (relative to cwd)
         if local:
             if not param2:
-                self.output_folder = 'Data/' + output_dir_name + '/' + 'output_' + param + '_' + val + '/'                                  # Note: overrides runSubmit + compasConfigDefault.yaml value
+                self.output_folder = output_dir_name                                # Note: overrides runSubmit + compasConfigDefault.yaml value
             else:
-                self.output_folder = 'Data/' + output_dir_name + '/' + 'output_' + param + '_' + val + '_' + param2 + '_' + val2 + '/'
+                self.output_folder = output_dir_name
         else:
             if not param2:
                 self.output_folder = cluster_storage_path + output_dir_name + '/' + 'output_' + param + '_' + val + '/'                     # Note: overrides runSubmit + compasConfigDefault.yaml value
             else:
                 self.output_folder = cluster_storage_path + output_dir_name + '/' + 'output_' + param + '_' + val + '_' + param2 + '_' + val2 + '/'
-        self.random_seed_base = 0               # The initial random seed to increment from                                                 # Note: overrides runSubmit + compasConfigDefault.yaml value
+        
+        # Make folder for all the outputs if it does not exist
+        if not os.path.isdir(self.output_folder):
+            os.mkdir(self.output_folder)
 
-        self.num_cores = num_cores              # Number of cores to parallelize over 
-        self.num_per_core = num_per_core        # Number of binaries per batch
-        self.mc_only = False                    # Exclude adaptive importance sampling (currently not implemented, leave set to True)
-        self.run_on_hpc = False                 # Run on slurm based cluster HPC
+        self.random_seed_base = 0                           # The initial random seed to increment from                                                 # Note: overrides runSubmit + compasConfigDefault.yaml value
 
-        self.output_filename = 'samples.csv'    # output filename for the stroopwafel samples
-        self.debug = True                       # show COMPAS output/errors
+        self.num_cores = int(num_cores)                     # Number of cores to parallelize over 
+        self.num_per_core = int(num_per_core)               # Number of binaries per batch
+        self.mc_only = False                                # Exclude adaptive importance sampling (currently not implemented, leave set to True)
+        self.run_on_hpc = False                             # Run on slurm based cluster HPC
 
-        self.param1_label = param               # Label of the first parameter
-        self.param1_val = val                   # Value of the first parameter
-        self.param2_label = param2              # Label of the second parameter
-        self.param2_val = val2                  # Value of the second parameter
+        self.output_filename = 'samples.csv'                # output filename for the stroopwafel samples
+        self.debug = True                                   # show COMPAS output/errors
 
-        self.local = local                      # Whether this is local a local job or a slurm submittion
-        self.num_nodes = num_nodes              # The number of nodes that we will be using
+        self.param1_label = param                           # Label of the first parameter
+        self.param1_val = val                               # Value of the first parameter
+        self.param2_label = param2                          # Label of the second parameter
+        self.param2_val = val2                              # Value of the second parameter
+
+        self.local = local                                  # Whether this is local a local job or a slurm submittion
+        self.num_nodes = int(num_nodes)                     # The number of nodes that we will be using
+        self.partition = partition                          # The partition we will submit the job to
+        self.cluster_scripts_path = cluster_scripts_path    # The path to the scripts we will use on the cluster
+        self.memory = memory                                # The amount of memory we will request
+        self.walltime = walltime                            # The amount of tim we will request
+        self.on_cluster = on_cluster                        # Whether or not we are on the cluster :)
+        self.sw_simulations = sw_simulations                # Whether or not to simulate with stroopwafel
 
         self.commandOptions =  null
     
 
+    ###############################################
+    ### SW SAMPLING
+    ###############################################
     def make_slurm_batch(self, OUT_DIR = None, python_name = "custom_sw_run", job_name = "sw_run",\
-        number_of_nodes = 1, number_of_cores = 1, partition='shared',\
-        walltime = '05:00:00', memory = '16000'):
+        number_of_nodes = 1, number_of_cores = 1, partition='test',\
+        walltime = '05:00:00', memory = '16000', email=''):
         # Code adapted from Lieke Van Son
 
         # Output and error files
-        outfile = OUT_DIR + job_name + '.out'
-        errfile = OUT_DIR + job_name + '.err'
+        # outfile = OUT_DIR + job_name + '.out' 
+        # errfile = OUT_DIR + job_name + '.err'
+        
+        # FOR DEBUGGING REPLACE WITH ABOVE WHEN DONE!
+        outfile = cluster_storage_path + job_name + '.out' 
+        errfile = cluster_storage_path + job_name + '.err'
 
         # The line that runs the job
-        job_line = "python "+python_name+".py"
+        job_line = "python "+cluster_path_to_scripts+python_name+".py"
 
         # Make slurm script string
         interface_job_string = SlurmJobString % (job_name, number_of_nodes, number_of_cores, \
-            outfile, errfile, walltime, memory, partition, user_email,\
-            self.COMPAS_ROOT_DIR, self.config_file, self.output_folder, self.num_systems, self.num_cores, self.num_per_core,\
+            outfile, errfile, walltime, self.memory, partition, email,\
+            cluster_COMPAS_ROOT_DIR, self.config_file, self.output_folder, self.num_systems, self.num_cores, self.num_per_core,\
             self.param1_label, self.param2_label, self.param1_val,\
             self.param2_val, job_line)
+            
 
         # Write the sbatch script
-        sbatchFile = open(cluster_scripts_path + 'submit_' + job_name + '.sh','w')
-        print('writing ', cluster_scripts_path + 'submit_' + job_name + '.sh')
+        sbatchFile = open(self.cluster_scripts_path + 'submit_' + job_name + '.sh','w')
+        print('writing ', self.cluster_scripts_path + 'submit_' + job_name + '.sh')
         sbatchFile.write(interface_job_string)
         sbatchFile.close()
 
         return interface_job_string
     
-    
-    def run_slurm_batch(run_dir = None, job_name = "sw_run", dependency = False, dependent_ID = None):
-        # Code adapted from Lieke Van Son
 
+    def run_slurm_batch(self, run_dir = None, job_name = "submit_sw_run", dependency = False, dependent_ID = None):
+
+        # Code adapted from Lieke Van Son
         if not dependency:
-            sbatchArrayCommand = 'sbatch ' + os.path.join(run_dir+job_name+'.sbatch') 
+            sbatchArrayCommand = 'sbatch ' + os.path.join(run_dir+job_name+'.sh') 
         else:
-            sbatchArrayCommand = 'sbatch --dependency=afterok:' + str(int(dependent_ID)) + ' ' + os.path.join(run_dir+job_name+'.sbatch') 
+            sbatchArrayCommand = 'sbatch --dependency=afterok:' + str(int(dependent_ID)) + ' ' + os.path.join(run_dir+job_name+'.sh') 
 
         # Open a pipe to the sbatch command.
         proc = Popen(sbatchArrayCommand, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
@@ -160,9 +256,68 @@ class SwInterface():
         print('sbatchArrayCommand:', sbatchArrayCommand)
         out, err = proc.communicate()
         print("out = ", out)
-        job_id = out.split()[-1]
-        print("job_id", job_id)
+        job_id = out.split()
+        print("job_id:", job_id)
+        print("error: ", err)
         return job_id
+
+
+    ###############################################
+    ### COMBINE H5 FILES/APPEND WEIGHTS
+    ###############################################
+    def make_data_consolidation_slurm_batch(self, OUT_DIR = None, python_name = "combine_h5s", job_name = "combine_h5s",\
+        number_of_nodes = 1, number_of_cores = 1, partition='test',\
+        walltime = '05:00:00', memory = '16000', email='', flags=''):
+
+        # Output and error file
+        outfile = cluster_storage_path + job_name + '.out' 
+        errfile = cluster_storage_path + job_name + '.err'
+
+        # The line for the job submission
+        job_line = "python "+cluster_path_to_scripts+python_name+".py " + flags
+
+        # Make slurm script string
+        interface_job_string = DataSlurmJobString % (job_name, number_of_nodes, number_of_cores, \
+            outfile, errfile, walltime, self.memory, partition, email,\
+            cluster_COMPAS_ROOT_DIR, self.output_folder,\
+            self.param1_label, self.param2_label, self.param1_val,\
+            self.param2_val, job_line)
+
+        sbatchFile = open(self.cluster_scripts_path + 'submit_' + job_name + '.sh','w')
+        print('writing ', self.cluster_scripts_path + 'submit_' + job_name + '.sh')
+        sbatchFile.write(interface_job_string)
+        sbatchFile.close()
+
+        return interface_job_string
+    
+
+    ###############################################
+    ### CALCULATE AND PICKLE THE RATES AND BOOSTRAPS
+    ###############################################
+    def make_rates_and_boostrap_slurm_batch(self, OUT_DIR = None, python_name = "pickle_rates", job_name = "pickle_rates",\
+        number_of_nodes = 1, number_of_cores = 1, partition='test',\
+        walltime = '05:00:00', memory = '16000', email='', flags='', dco_type='BBH'):
+
+        # Output and error file
+        outfile = cluster_storage_path + job_name + '.out' 
+        errfile = cluster_storage_path + job_name + '.err'
+
+        # The line for the job submission
+        job_line = "python "+cluster_path_to_scripts+python_name+".py " + flags
+
+        # Make slurm script string
+        interface_job_string = RatesSlurmJobString % (job_name, number_of_nodes, number_of_cores, \
+            outfile, errfile, walltime, memory, partition, email,\
+            cluster_COMPAS_ROOT_DIR, self.output_folder,\
+            self.param1_label, self.param2_label, self.param1_val,\
+            self.param2_val, dco_type, job_line)
+
+        sbatchFile = open(self.cluster_scripts_path + 'submit_' + job_name + '.sh','w')
+        print('writing ', self.cluster_scripts_path + 'submit_' + job_name + '.sh')
+        sbatchFile.write(interface_job_string)
+        sbatchFile.close()
+
+        return interface_job_string
 
 
     def create_dimensions(self):
@@ -176,7 +331,7 @@ class SwInterface():
         """
         m1 = classes.Dimension('--initial-mass-1', 5, 150, sampler.kroupa, prior.kroupa)
         q = classes.Dimension('q', 0, 1, sampler.uniform, prior.uniform, should_print = False)
-        a = classes.Dimension('--semi-major-axis', .01, 1000, sampler.flat_in_log, prior.flat_in_log) # I think this is off? IT WAS!!!
+        a = classes.Dimension('--semi-major-axis', .01, 1000, sampler.flat_in_log, prior.flat_in_log)
         Z = classes.Dimension('--metallicity', 0.0001, 0.03, sampler.flat_in_log, prior.flat_in_log)
         # kick_velocity_random_1 = classes.Dimension('Kick_Velocity_Random_1', 0, 1, sampler.uniform, prior.uniform)
         # kick_theta_1 = classes.Dimension('Kick_Theta_1', -np.pi / 2, np.pi / 2, sampler.uniform_in_cosine, prior.uniform_in_cosine)
@@ -379,7 +534,7 @@ class SwInterface():
             # commandOptions.update({'--logfile-delimiter' : 'COMMA'})  # overriden if there is a runSubmit + compas ConfigDefault.yaml
 
             # Over-ride with runSubmit + compasConfigDefault.yaml parameters, if given config is not valid
-            sys.path.append(os.path.dirname(self.COMPAS_ROOT_DIR + '/utils/preProcessing/'))
+            sys.path.append(os.path.dirname(cluster_COMPAS_ROOT_DIR + '/utils/preProcessing/'))
             try:
                 from runSubmit import pythonProgramOptions
                 programOptions = pythonProgramOptions(config_file=self.config_file)   # Call the programoption class from runSubmit
@@ -400,12 +555,15 @@ class SwInterface():
                 raise ValueError("Invalid runSubmit + compas ConfigDefault.yaml file, using default stroopwafel options")        
 
             print("Output folder is: ", self.output_folder)
-            if os.path.exists(self.output_folder):
-                command = input ("The output folder already exists. If you continue, I will remove all its content. Press (Y/N)\n")
-                if (command == 'Y'):
-                    shutil.rmtree(self.output_folder)
-                else:
-                    exit()
+            if self.on_cluster: # If we are on the cluster, we will assume you would like to remove content of the existing output folder because we cannot take user input
+                shutil.rmtree(self.output_folder)
+            else:
+                if os.path.exists(self.output_folder):
+                    command = input ("The output folder already exists. If you continue, I will remove all its content. Press (Y/N)\n")
+                    if (command == 'Y'):
+                        shutil.rmtree(self.output_folder)
+                    else:
+                        exit()
             os.makedirs(self.output_folder)
 
 
@@ -431,15 +589,63 @@ class SwInterface():
             print ("Total running time = %d seconds" %(end_time - start_time))
 
         else: # This is a cluster job
+            
+
             # Make Stroopwafel batch and submit it
             print(10* "*" + ' You are Going to Run stroopwafel_interface.py')
             # Make and safe a slurm command  #"stroopwafel_interface",\
             SW_job_string = self.make_slurm_batch(OUT_DIR = self.output_folder, python_name = "custom_sw_run",\
-                job_name = "sw_run", number_of_nodes = self.num_nodes, number_of_cores = self.num_cores, partition='shared',\
-                walltime = "40:00:00", memory = "15000", email = user_email) #150000
+                job_name = "sw_run", number_of_nodes = self.num_nodes, number_of_cores = self.num_cores, partition=self.partition,\
+                walltime = self.walltime, memory = "15000", email = user_email) #150000
 
             # Submit the job to sbatch! 
-            SWjob_id = self.run_slurm_batch(run_dir = cluster_scripts_path, job_name = "sw_run",\
+            SWjob_id = self.run_slurm_batch(run_dir = self.cluster_scripts_path, job_name = "submit_sw_run",\
+                dependency = False, dependent_ID = None)
+
+
+    def combine_h5s(self, walltime='00:10:00'):
+
+        # The flags that we need to combine each of the batch's h5 files. This assumes that there is no h5 file in the output directory that is not a batch's results
+        h5Flags = ' '+self.output_folder+' -r 2 -b 20 -o '+self.output_folder+'COMPAS_Output.h5'
+
+        # Make h5 combine batch
+        SW_job_string = self.make_data_consolidation_slurm_batch(OUT_DIR = self.output_folder, python_name = "h5copy_run",\
+            job_name = "h5copy", number_of_nodes = self.num_nodes, number_of_cores = self.num_cores, partition=self.partition,\
+            walltime = walltime, memory = "15000", email = user_email, flags= h5Flags)
+
+        # Submit the job to sbatch!
+        SWjob_id = self.run_slurm_batch(run_dir = self.cluster_scripts_path, job_name = "submit_h5copy",\
+            dependency = False, dependent_ID = None)
+
+
+    def append_weights(self, walltime='00:10:00'):
+        # Make append weights batch
+        SW_job_string = self.make_data_consolidation_slurm_batch(OUT_DIR = self.output_folder, python_name = "append_weights_run", job_name = "append_weights",\
+            number_of_nodes = self.num_nodes, number_of_cores = self.num_cores, partition=self.partition,\
+            walltime = walltime, memory = "15000", email = user_email)
+
+        # Submit the job to sbatch! 
+        SWjob_id = self.run_slurm_batch(run_dir = self.cluster_scripts_path, job_name = "submit_append_weights",\
+            dependency = False, dependent_ID = None)
+
+
+    def pickle_rates_and_boostraps(self, walltime='00:10:00', memory="15000", dco_types=['BBH', 'BHNS', 'BNS']):
+
+        # Make a folder to put the pickled rates into
+        pickled_results_dir = self.output_folder + 'Pickled_Rates'
+        if not os.path.exists(pickled_results_dir):
+            os.mkdir(pickled_results_dir)
+
+        # Submit a job for each of the DCO types
+        for dco_type in dco_types:
+
+            # Make pickle rates and boostrap batch
+            SW_job_string = self.make_rates_and_boostrap_slurm_batch(OUT_DIR = self.output_folder, python_name = "pickle_rates_run", job_name = "pickle_rates",\
+                number_of_nodes = self.num_nodes, number_of_cores = self.num_cores, partition=self.partition,\
+                walltime = walltime, memory = memory, email = user_email, dco_type=dco_type)
+
+            # Submit the job to sbatch! 
+            SWjob_id = self.run_slurm_batch(run_dir = self.cluster_scripts_path, job_name = "submit_pickle_rates",\
                 dependency = False, dependent_ID = None)
 
 
@@ -448,7 +654,9 @@ class SwInterface():
 
 def main():
 
-    # # ALPHA_CE
+    ###############################################
+    ### ALPHA_CE
+    ###############################################
     # for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/common_envelope_alpha_config_files'):
     #     val = filename[:-5][-4:].replace('_','')
     #     ce_alpha_interface = SwInterface('common_envelope_alpha_config_files/' + filename, 'common_envelope_alpha', val, num_systems=1000000, num_per_core=100000, num_cores=10)
@@ -457,8 +665,12 @@ def main():
 
 
 
-    # ALPHA_CE AND BETA
-    for filename in os.listdir('/Users/adamboesky/Research/PRISE/exploring_parameter_space/Configuration_Files/common_envelope_alpha_mass_transfer_fa_config_files'):
+    ###############################################
+    ### ALPHA_CE AND BETA
+    ###############################################
+    # RUN SW COMPAS SIMULATIONS
+    counter = 0
+    for filename in os.listdir('/n/home04/aboesky/berger/Exploring_Parameter_Space/Configuration_Files/common_envelope_alpha_mass_transfer_fa_config_files'):
         
         # Get the valeus from each filename
         vals = []
@@ -469,10 +681,91 @@ def main():
             except ValueError:
                 pass
         
-        # Run the stroopwafel sampling
-        ce_alpha_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0], output_dir_name='2output_alpha_CE_beta_corrected_dists', param2='beta', val2=vals[1], num_systems=1000000, num_per_core=100000, num_cores=10)
-        ce_alpha_interface.run_sw()
+        # # RUN STROOPWAFEL SAMPLING
+        # alpha_beta_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0],\
+        #         output_dir_name='final_alpha_CE_beta', param2='beta', val2=vals[1], num_systems=20000000,\
+        #         num_per_core=1000000, num_cores=20, num_nodes=1, memory='64G', walltime="100:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        # alpha_beta_interface.run_sw()
+
+        # # COMBINE H5S
+        # alpha_beta_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0],\
+        #         output_dir_name='final_alpha_CE_beta', param2='beta', val2=vals[1], num_systems=20000000,\
+        #         num_per_core=2000000, num_cores=10, num_nodes=1, memory='48G', walltime="07:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        # alpha_beta_interface.combine_h5s(walltime='07:00:00')
+
+        # # APPEND WEIGHTS
+        # alpha_beta_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0],\
+        #         output_dir_name='final_alpha_CE_beta', param2='beta', val2=vals[1], num_systems=20000000,\
+        #         num_per_core=2000000, num_cores=10, num_nodes=1, memory='48G', walltime="05:00:00", local=False, partition='shared', cluster_scripts_
+        # =cluster_path_to_scripts)
+        # alpha_beta_interface.append_weights(walltime='05:00:00')
+
+        # GET AND PICKLE RATES AND BOOTSTRAPPED ERRORS
+        # Share Partition
+        alpha_beta_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0],\
+                output_dir_name='final_alpha_CE_beta', param2='beta', val2=vals[1], num_systems=20000000,\
+                num_per_core=1000000, num_cores=48, num_nodes=1, memory='184GB', walltime="100:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        alpha_beta_interface.pickle_rates_and_boostraps(walltime='50:00:00', memory="184GB", dco_types=['BBH'])
+        # # Test Partition
+        # if counter == 0:
+        #     print('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE')
+        #     alpha_beta_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0],\
+        #             output_dir_name='final_alpha_CE_beta', param2='beta', val2=vals[1], num_systems=20000000,\
+        #             num_per_core=1000000, num_cores=48, num_nodes=1, memory='184GB', walltime="100:00:00", local=False, partition='test', cluster_scripts_path=cluster_path_to_scripts)
+        #     alpha_beta_interface.pickle_rates_and_boostraps(walltime='8:00:00', memory="184GB", dco_types=['BBH'])
+        # # Bigmem Partition
+        # alpha_beta_interface = SwInterface('common_envelope_alpha_mass_transfer_fa_config_files/' + filename, 'alpha_CE', vals[0],\
+        #         output_dir_name='final_alpha_CE_beta', param2='beta', val2=vals[1], num_systems=20000000,\
+        #         num_per_core=1000000, num_cores=64, num_nodes=1, memory='499GB', walltime="100:00:00", local=False, partition='bigmem', cluster_scripts_path=cluster_path_to_scripts)
+        # alpha_beta_interface.pickle_rates_and_boostraps(walltime='150:00:00', memory="499GB", dco_types=['BBH'])
+        counter+=1
+
+
+
+    ###############################################
+    ### KICK VELOCITY AND REMNANT MASS PRESCRIPTION
+    ###############################################
+    # RUN SW COMPAS SIMULATIONS
+    for filename in os.listdir('/n/home04/aboesky/berger/Exploring_Parameter_Space/Configuration_Files/kick_sigma_remnant_mass_config_files'):
+        
+        # Get the valeus from each filename
+        vals = []
+        for piece in filename[:-5].split('_'):
+            try:
+                float(piece)
+                vals.append(piece)
+            except ValueError:
+                pass
+        vals.append(filename[-6])
+        
+        # # RUN STROOPWAFEL SAMPLING
+        # sigma_remnant_mass = SwInterface('kick_sigma_remnant_mass_config_files/' + filename, 'sigma', vals[0],\
+        #         output_dir_name='final_sigma_remnant_prescription', param2='remnant_prescription', val2=vals[1], num_systems=20000000,\
+        #         num_per_core=1000000, num_cores=20, num_nodes=1, memory='64G', walltime="100:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        # sigma_remnant_mass.run_sw()
+
+        # # COMBINE H5S
+        # sigma_remnant_mass = SwInterface('kick_sigma_remnant_mass_config_files/' + filename, 'sigma', vals[0],\
+        #         output_dir_name='final_sigma_remnant_prescription', param2='remnant_prescription', val2=vals[1], num_systems=20000000,\
+        #         num_per_core=2000000, num_cores=10, num_nodes=1, memory='64G', walltime="07:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        # sigma_remnant_mass.combine_h5s(walltime='07:00:00')
+
+        # # APPEND WEIGHTS
+        # sigma_remnant_mass = SwInterface('kick_sigma_remnant_mass_config_files/' + filename, 'sigma', vals[0],\
+                # output_dir_name='final_sigma_remnant_prescription', param2='remnant_prescription', val2=vals[1], num_systems=20000000,\
+                # num_per_core=2000000, num_cores=10, num_nodes=1, memory='48G', walltime="05:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        # sigma_remnant_mass.append_weights(walltime='05:00:00')
+
+        # GET AND PICKLE RATES AND BOOTSTRAPPED ERRORS
+        # Share Partition
+        sigma_remnant_mass = SwInterface('kick_sigma_remnant_mass_config_files/' + filename, 'sigma', vals[0],\
+                output_dir_name='final_sigma_remnant_prescription', param2='remnant_prescription', val2=vals[1], num_systems=20000000,\
+                num_per_core=2000000, num_cores=10, num_nodes=1, memory='48G', walltime="05:00:00", local=False, partition='shared', cluster_scripts_path=cluster_path_to_scripts)
+        sigma_remnant_mass.pickle_rates_and_boostraps(walltime='50:00:00', memory="184GB", dco_types=['BBH'])
+
+
 
 
 if __name__ == '__main__':
     sys.exit(main())
+

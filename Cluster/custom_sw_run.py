@@ -2,7 +2,7 @@ import os
 import sys
 
 # Append paths to access the scripts we need
-sys.path.append('/n/home04/aboesky/berger/Exploring_Parameter_Space/')
+sys.path.append('/n/home04/aboesky/berger/Exploring_Parameter_Space/Data_Generation')
 
 from custom_sw_interface import SwInterface
 
@@ -37,7 +37,7 @@ def main():
     config_filepath, output_dirname, num_systems, num_cores, num_per_core, param1_label, param2_label, param1_val, param2_val = get_env_params()
 
     # Declare a SwInterface
-    ce_alpha_interface = SwInterface(config_filepath, param1_label, param1_val, output_dir_name=output_dirname, param2=param2_label, val2=param2_val, num_systems=num_systems, num_per_core=num_per_core, num_cores=num_cores)
+    ce_alpha_interface = SwInterface(config_filepath, param1_label, param1_val, output_dir_name=output_dirname, param2=param2_label, val2=param2_val, num_systems=num_systems, num_per_core=num_per_core, num_cores=num_cores, on_cluster=True)
     ce_alpha_interface.run_sw()
 
 
