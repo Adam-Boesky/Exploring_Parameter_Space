@@ -1,9 +1,6 @@
 import os
 from subprocess import Popen
 
-from pathlib import Path
-from gwlandscape_python import GWLandscape
-
 # GWL = GWLandscape(token='1446a1b3c8be718461913e2f6397e5bda92bf4959b65dd284374381a7f89cedc')
 # PUB = GWL.create_publication(
 #     author='Adam Boesky',
@@ -11,7 +8,7 @@ from gwlandscape_python import GWLandscape
 #     arxiv_id='000000',
 #     year=2023
 # )
-PATH_TO_DATA = '/Volumes/T7/COMPAS_data/final_alpha_CE_beta'
+PATH_TO_DATA = '/n/holystore01/LABS/berger_lab/Users/aboesky/two_parameters/final_alpha_CE_beta'
 
 
 def deploy_uploaders():
@@ -25,12 +22,14 @@ def deploy_uploaders():
         for beta in beta_vals:
             print(f'Creating dataset for alpha = {alpha}, beta = {beta}')
 
-            # Open a pipe to the sbatch command.
+            # Set up env vars
             os.environ['ALPHA'] = alpha
             os.environ['BETA'] = beta
             os.environ['FPATH'] = fpath
             fpath = os.path.join(PATH_TO_DATA, f'output_alpha_CE_{alpha}_beta_{beta}/COMPAS_Output_Weighted.h5')
-            sbatch_command = f'sbatch --wait /Users/adamboesky/Research/PRISE/exploring_parameter_space/Uploading_Data/run_uploader.sh {alpha} {beta} {fpath}'
+
+            # Run uploader
+            sbatch_command = f'sbatch --wait /n/home04/aboesky/berger/Exploring_Parameter_Space/Uploading_Data/run_uploader.sh {alpha} {beta} {fpath}'
             proc = Popen(sbatch_command, shell=True)
             ps.append(proc)
 
