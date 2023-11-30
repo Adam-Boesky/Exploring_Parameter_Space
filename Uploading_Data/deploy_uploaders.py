@@ -32,7 +32,7 @@ def deploy_uploaders():
 
             # Set up env vars
             # fpath = os.path.join(PATH_TO_DATA, f'output_alpha_CE_{alpha}_beta_{beta}/COMPAS_Output_Weighted.h5')
-            fpath = os.path.join(PATH_TO_DATA, F'output_sigma_{sig}_remnant_prescription_{rmp}')
+            fpath = os.path.join(PATH_TO_DATA, F'output_sigma_{sig}_remnant_prescription_{rmp}/COMPAS_Output_Weighted.h5')
             # os.environ['ALPHA'] = alpha
             # os.environ['BETA'] = beta
             os.environ['SIGMA'] = sig
