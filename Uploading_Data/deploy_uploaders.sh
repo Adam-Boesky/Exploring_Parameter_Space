@@ -10,7 +10,7 @@
 module load python/3.10.9-fasrc01
 source activate Exploring_Uncertainties
 
-cd /Users/adamboesky/Research/PRISE/exploring_parameter_space/Uploading_Data
+cd /n/home04/aboesky/berger/Exploring_Parameter_Space/Uploading_Data
 
 echo 'Deploying!'
 python3 deploy_uploaders.py

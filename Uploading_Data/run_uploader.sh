@@ -7,8 +7,8 @@
 #SBATCH -o /n/home04/aboesky/berger/Exploring_Parameter_Space/Uploading_Data/logs/myoutput_\%j.out
 #SBATCH -e /n/home04/aboesky/berger/Exploring_Parameter_Space/Uploading_Data/logs/myerrors_\%j.err
 
-cd /Users/adamboesky/Research/PRISE/exploring_parameter_space/Uploading_Data
+cd /n/home04/aboesky/berger/Exploring_Parameter_Space/Uploading_Data
 
 echo 'Running!'
-python3 run_uploader.py $ALPHA $BETA $FPATH
+python3 run_uploader.py $SIGMA $RMP $FPATH
 echo 'Done running!'
